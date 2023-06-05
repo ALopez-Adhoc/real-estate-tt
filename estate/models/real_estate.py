@@ -30,3 +30,8 @@ class EstateProperty(models.Model):
         ('sold', 'Sold'),
         ('canceled', 'Canceled')
     ], string='State', required=True, copy=False, default='new')
+    property_type_id = fields.Many2one('estate.property.type', string='Property Type')
+    buyer_id = fields.Many2one('res.partner', string="Buyer")
+    salesperson_id = fields.Many2one(string='Salesperson', comodel_name='res.users', copy=False, default=lambda self: self.env.user)
+    
+    
