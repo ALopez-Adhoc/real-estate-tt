@@ -1,4 +1,4 @@
-from odoo import api, models, fields
+from odoo import api, models, fields, exceptions
 
 class EstateProperty(models.Model):
     _name = 'estate.property'
@@ -37,6 +37,17 @@ class EstateProperty(models.Model):
     offer_ids = fields.One2many(comodel_name='estate.property.offer', inverse_name='property_id')
     total_area = fields.Integer(compute='_compute_total_area', string='Total Area (m²)')
     best_price = fields.Integer(compute='_compute_best_price', string='Best Price')
+
+    _sql_constraints = [
+        ('check_selling_price','CHECK(selling_price>=0)','Can not use negative prices'),
+        ('check_expected_price','CHECK(expected_price>=0)','Can not use negative prices')]
+    
+    @api.constrains('selling_price','expected_price')
+    def _check_selling_price(self):
+        for rec in self:
+            expected_price2 = rec.expected_price * 0.9
+            if rec.selling_price < expected_price2 and rec.selling_price != 0:
+                raise exceptions.ValidationError('The price of the sell is to low')
         
     @api.depends('living_area', 'garden_area')
     def _compute_total_area(self):
@@ -56,4 +67,19 @@ class EstateProperty(models.Model):
         else:
             self.garden_area = False
             self.garden_orientation = False
+
+    def sell_properties(self):
+        for rec in self:
+            if rec.state != 'canceled':
+                rec.state = 'sold'
+            else:
+                raise exceptions.UserError('Canceled properties can not be sold')
+        return True
     
+    def cancel_properties(self):
+        for rec in self:
+            if rec.state != 'sold':
+                rec.state = 'canceled'
+            else:
+                raise exceptions.UserError('Sold properties can not be canceled')
+        return True
