@@ -3,6 +3,7 @@ from odoo import api, models, fields, exceptions
 class EstateProperty(models.Model):
     _name = 'estate.property'
     _description = 'App to manage Properties'
+    _order = 'id desc'
     
     name = fields.Char('Properties', required=True)
     description = fields.Text('Description')
@@ -37,6 +38,8 @@ class EstateProperty(models.Model):
     offer_ids = fields.One2many(comodel_name='estate.property.offer', inverse_name='property_id')
     total_area = fields.Integer(compute='_compute_total_area', string='Total Area (m²)')
     best_price = fields.Integer(compute='_compute_best_price', string='Best Price')
+    type_id = fields.Many2one(comodel_name='estate.property.type', string='Property Lines')
+    user_id = fields.Many2one(comodel_name='res.users', string='User')
 
     _sql_constraints = [
         ('check_selling_price','CHECK(selling_price>=0)','Can not use negative prices'),
@@ -83,3 +86,9 @@ class EstateProperty(models.Model):
             else:
                 raise exceptions.UserError('Sold properties can not be canceled')
         return True
+    
+    @api.ondelete(at_uninstall=True)
+    def _unlink_except_state(self):
+        for rec in self:
+            if rec.state not in ['new','canceled']:
+                raise exceptions.UserError("Records can be deleted only if are New or Canceled")

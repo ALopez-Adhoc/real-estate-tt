@@ -5,7 +5,7 @@
         <field name="name">Propiedades</field>
         <field name="model">estate.property</field>
         <field name="arch" type="xml">
-            <tree>
+            <tree decoration-success="state=='o_r' or state=='o_a'" decoration-bf="state=='o_a'" decoration-muted="state=='sold'">
                 <field name="name" />
                 <field name="postcode" />
                 <field name="bedrooms" />
@@ -13,6 +13,7 @@
                 <field name="expected_price" />
                 <field name="selling_price" />
                 <field name="date_availability" />
+                <field name="state" />
             </tree>
         </field>
     </record>
@@ -23,23 +24,24 @@
         <field name="arch" type="xml">
             <form string="">
                 <header>
-                    <button string="Sold" name="sell_properties" type="object" />
-                    <button string="Cancel" name="cancel_properties" type="object" />
+                    <button string="Sold" name="sell_properties" states='new,o_r,o_a' type="object" />
+                    <button string="Cancel" name="cancel_properties" states='new,o_r,o_a' type="object" />
+                    <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
                         <h1>
                             <field name="name" />
                         </h1>
-                        <field name="tag_ids" widget="many2many_tags" />
+                        <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}" />
                     </div>
                     <group>
                         <group>
                             <group>
                                 <field name="state" />
-                                <field name="property_type_id" />
+                                <field name="property_type_id" options="{'no_create_edit':True}"/>
                                 <field name="postcode" />
-                                <field name="date_availability" />
+                                <field name="date_availability" optional="hidden" />
                             </group>
                             <group>
                                 <field name="expected_price" />
@@ -56,15 +58,13 @@
                                     <field name="facades" />
                                     <field name="garage" />
                                     <field name="garden" />
-                                    <field name="garden_area" />
-                                    <field name="garden_orientation" />
-                                    <field name="total_area" />
+                                    <field name="garden_area" attrs="{'invisible': [('garden', '=', False)]}"/>
+                                    <field name="garden_orientation" attrs="{'invisible': [('garden', '=', False)]}"/>
+                                    <field name="total_area" attrs="{'invisible': [('garden', '=', False)]}"/>
                                 </group>
                             </page>
                             <page string="Offers">
-                                <group>
-                                    <field name="offer_ids" />
-                                </group>
+                                <field name="offer_ids" attrs="{'readonly': ['|', '|', ('state','=','o_a'), ('state','=','sold'), ('state','=','canceled')]}" />
                             </page>
                             <page string="Other Info">
                                 <group>
@@ -88,7 +88,7 @@
                 <field name="postcode" />
                 <field name="expected_price" />
                 <field name="bedrooms" />
-                <field name="living_area" />
+                <field name="living_area" filter_domain="[('living_area', '>=', self)]" />
                 <field name="facades" />
                 <filter name="state" string="Availability" domain="['|',('state', '=', 'new'),('state', '=', 'o_r')]"/>
                 <filter name="postcode" string="Postcode" context="{'group_by': 'postcode'}" />

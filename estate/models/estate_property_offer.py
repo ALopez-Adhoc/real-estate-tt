@@ -4,6 +4,7 @@ from odoo import _, api, fields, models, exceptions
 class Offer(models.Model):
     _name = 'estate.property.offer'
     _description = 'List of offers'
+    _order = 'price desc'
 
     name = fields.Char(string='')
     price = fields.Float(string='Price')
@@ -14,6 +15,7 @@ class Offer(models.Model):
     property_id = fields.Many2one(comodel_name='estate.property', string='Property', required=True)
     validity = fields.Integer(string='Validity', default=7)
     date_deadline = fields.Date(string='Date Deadline', compute='_compute_date_deadline', inverse='_inverse_date_deadline', default=lambda self: fields.Date.today())
+    property_type_id = fields.Many2one('estate.property.type', related='property_id.property_type_id', store=True)
 
     _sql_constraints = [
         ('check_price','CHECK(price>=0)','You can not use negative prices')
@@ -44,3 +46,12 @@ class Offer(models.Model):
     def cancel_offer(self):
         for rec in self:
             rec.status = 'refused'
+                
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            property_id = vals.get('property_id', False)
+            if property_id:
+                offer_lines = self.env['estate.property'].browse(property_id)
+                offer_lines.state = 'o_r'
+        return super(Offer, self).create(vals_list)
